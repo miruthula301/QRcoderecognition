@@ -6,10 +6,10 @@ Created on Sat Jan 23 17:32:58 2021
 """
 
 import tensorflow as tf
-import qrcodes
-from qrcodes import IMAGE_SIZE
+import qr
+from qr import IMAGE_SIZE
 
-NUM_OUTPUTS = len(qrcodes.CHARACTER_SET)
+NUM_OUTPUTS = len(qr.CHARACTER_SET)
 
 
 # Helper functions
@@ -26,14 +26,14 @@ def bias_variable(shape):
 # Validation set
 NUM_TEST_IMAGES = 5000
 print("Creating {} random test images ... ".format(NUM_TEST_IMAGES), end="", flush=True)
-test_images, test_labels = qrcodes.getRandomBatch(size=NUM_TEST_IMAGES)
+test_images, test_labels = qr.getRandomBatch(size=NUM_TEST_IMAGES)
 print("done")
 
 
 # Inputs
 with tf.name_scope("input"):
     x_image = tf.placeholder(tf.float32, shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1], name="x_image")
-    y_ = tf.placeholder(tf.float32, shape=[None, NUM_OUTPUTS], name="y_")
+    y_image = tf.placeholder(tf.float32, shape=[None, NUM_OUTPUTS], name="y_image")
     tf.summary.image('x_image', x_image, max_outputs=3)
 
 with tf.name_scope("dropout_input"):
@@ -74,7 +74,7 @@ with tf.name_scope("readout"):
 # Loss function
 with tf.name_scope("cross_entropy"):
     cross_entropy = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits_v2(logits=y_readout, labels=y_))
+        tf.nn.softmax_cross_entropy_with_logits_v2(logits=y_readout, labels=y_image))
     tf.summary.scalar("cross entropy", cross_entropy)
 
 # Training
@@ -84,7 +84,7 @@ with tf.name_scope("train_step"):
 # Evaluation
 with tf.name_scope("accuracy"):
     with tf.name_scope("correct_prediction"):
-        correct_prediction = tf.equal(tf.argmax(y_readout, 1), tf.argmax(y_, 1))
+        correct_prediction = tf.equal(tf.argmax(y_readout, 1), tf.argmax(y_image, 1))
     with tf.name_scope("accuracy"):
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         tf.summary.scalar("accuracy", accuracy)
@@ -114,13 +114,13 @@ with tf.Session() as sess:
     KEEP_PROBABILITY = 1.0
 
     for i in range(MAX_STEPS):
-        batch_images, batch_labels = qrcodes.getRandomBatch(size=BATCH_SIZE)
+        batch_images, batch_labels = qrc.getRandomBatch(size=BATCH_SIZE)
 
         if i % 100 == 0:
             # Record test set accuracy
             summary, acc = sess.run([merged, accuracy], feed_dict={
                                     x_image: test_images,
-                                    y_: test_labels,
+                                    y_image: test_labels,
                                     keep_prob: 1.0})
             print("Test set accuracy at step {:06}: {:.05}".format(i, acc), flush=True)
             test_writer.add_summary(summary, i)
@@ -134,7 +134,7 @@ with tf.Session() as sess:
                 run_metadata = tf.RunMetadata()
                 summary, _ = sess.run([merged, train_step], feed_dict={
                                       x_image: batch_images,
-                                      y_: batch_labels,
+                                      y_image: batch_labels,
                                       keep_prob: KEEP_PROBABILITY},
                                       options=run_options,
                                       run_metadata=run_metadata
