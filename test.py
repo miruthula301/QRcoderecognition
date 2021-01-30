@@ -14,7 +14,7 @@ from nose.tools import assert_equals
 def test_qrCodeMatrix():
     """QR code matrices should have the specified size"""
 
-    data = "kg823nASp7"
+    data = ""
     matrix = qr.qrCodeMatrix(data)
     assert_equals((qr.IMAGE_SIZE, qr.IMAGE_SIZE), matrix.shape)
 
